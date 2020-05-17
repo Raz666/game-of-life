@@ -10,7 +10,7 @@ function App() {
     <div className="App">
 
       <Router>
-        <Route path={['/:game', '/']} component={Game} />
+        <Route exact path={['/game/:game', '/']} component={Game} />
       </Router>
     </div>
   );
