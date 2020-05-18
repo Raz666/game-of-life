@@ -1,0 +1,80 @@
+$common-padding: 0.3em 0.7em;
+$common-light: white;
+$common-dark: #282c34;
+$common-size: 0.7em;
+$common-radius: 10px;
+$common-border: 2px solid $common-light;
+
+.App {
+  text-align: center;
+}
+
+.App-header {
+  min-height: 100vh;
+  padding: 1em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: $common-dark;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+td {
+  width: 20px;
+  height: 20px;
+
+  &.alive {
+    background-color: $common-light;
+  }
+}
+
+button {
+  padding: $common-padding;
+  background: $common-light;
+  border: $common-border;
+  color: $common-dark;
+
+  &:hover,
+  &:focus {
+    background: none;
+    color: $common-light;
+    cursor: pointer;
+  }
+
+  &.toggle {
+    margin: 0 0.5em;
+    border-radius: 50px;
+    font-size: 1em;
+  }
+
+  &.copy {
+    border-left: none;
+    border-radius: 0 $common-radius $common-radius 0;
+    font-size: $common-size;
+  }
+}
+
+input:read-only {
+  padding: $common-padding;
+  background: none;
+  border: $common-border;
+  border-radius: $common-radius 0 0 $common-radius;
+  color: $common-light;
+  font-size: $common-size;
+  text-overflow: ellipsis;
+
+  &:focus {
+    background: #ffffff52;
+    // color: $common-dark;
+  }
+
+  &::selection {
+    background: #6f747d;
+  }
+}
+
+*:focus {
+  outline: none;
+}

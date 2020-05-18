@@ -1,89 +1,93 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
+import { Matrix, calculateNextGeneration, generateStartPoint } from '../services/GameLogic';
 
-type TParams = {
-  game: string,
+type Params = {
+  startPoint: string,
 };
-type matrix = Array<Array<number>>;
 
-const Game: React.FC<RouteComponentProps<TParams>> = ({ match }) => {
-  const alive = 1;
-  const dead = 0;
+const startPointSize = 50; //prepare table to overflow instead if squish
 
-  const conwaysGameOfLife = (game: matrix): matrix => {
-    const newGame: matrix = []
-    for (let y = 0; y < game.length; y += 1) {
-      const newRow: Array<number> = []
-      for (let x = 0; x < game[y].length; x += 1) {
-        const cell = game[y][x];
-        const prevX = x > 0 ? x - 1 : x;
-        const nextX = x < game[y].length - 1 ? x + 2 : x + 1;
-        const counter =
-          (game[y - 1] ? game[y - 1].slice(prevX, nextX).reduce((acc, v) => acc + v) : 0) +
-          (game[y][x - 1] || 0) + (game[y][x + 1] || 0) +
-          (game[y + 1] ? game[y + 1].slice(prevX, nextX).reduce((acc, v) => acc + v) : 0)
-        cell === alive
-          ? counter > 1 && counter <= 3
-            ? newRow.push(alive)
-            : newRow.push(dead)
-          : counter === 3
-            ? newRow.push(alive)
-            : newRow.push(dead)
-      }
-      newGame.push(newRow);
-    }
-    return newGame;
+const Game: React.FC<RouteComponentProps<Params>> = ({ match }) => {
+  let parsedURL: Matrix | undefined;
+  let parseError: string;
+  try {
+    parsedURL = match.params && match.params.startPoint && JSON.parse(match.params.startPoint)
+  } catch {
+    parseError = 'There’s a typo in the starting point. Please make sure it looks like this: [[0,1,0],[0,1,0],[0,1,0]]'; //show it somewhere
   }
 
-  const generateGame = (height: number, width: number): matrix => {
-    return Array.from({ length: height }, (v, k) => (
-      Array.from({ length: width }, (v, k) => {
-        return (Math.random() * 100 | 0) < 50 ? dead : alive
-      })
-    ))
-  }
+  const startPoint = parsedURL ? parsedURL : generateStartPoint(startPointSize, startPointSize);
+  const gameUrl = useRef<HTMLInputElement>(null);
 
-  const setup = ((game: matrix) => {
+  const [area, setArea] = useState(startPoint);
+  const [generation, setGeneration] = useState(1);
+  const [ticker, setTicker] = useState(1);
+  const [paused, setPaused] = useState(false);
+
+  const setup = ((game: Matrix) => {
     const interval: number = window.setInterval(() => {
       setGeneration(generation => generation + 1);
-      const newGame = conwaysGameOfLife(game);
+      const newGame = calculateNextGeneration(game);
       game = newGame;
-      setGameBoard(game);
+      setArea(game);
     }, 1000);
     setTicker(interval);
     return () => clearInterval(interval);
   });
 
-  const parsedURL: matrix = match.params && match.params.game && JSON.parse(match.params.game);
-  const game = parsedURL ? parsedURL : generateGame(20, 20);
-  const [gameBoard, setGameBoard] = useState(game);
-  const [generation, setGeneration] = useState(1);
-  const [ticker, setTicker] = useState(1);
-  useEffect(() => {
-    // console.log(parsedURL);
-    // console.log(game);
-    // console.log(JSON.stringify(game));
-    setup(game);
-  }, []);
+  const copyUrl = () => {
+    gameUrl.current && gameUrl.current.select();
+    document.execCommand("copy");
+  }
+
+
+  const toggleTicking = () => {
+    paused ? setup(area) : clearInterval(ticker);
+    setPaused(!paused);
+  }
+
+  const reset = () => {
+    clearInterval(ticker);
+    setArea(startPoint);
+    setGeneration(1);
+    setup(startPoint);
+  }
 
   return (
     <header className="App-header">
-      Generation: {generation}
-      <table>
-        <tbody>
-          {gameBoard.map((tr, trId) => {
-            return (
-              <tr key={trId}>{tr.map((td, tdId) => {
-                return (
-                  <td key={tdId} style={{ backgroundColor: td ? 'white' : '', width: '20px', height: '20px' }}></td>
-                );
-              })}</tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <button onClick={() => clearInterval(ticker)}>Stop</button>
-      <button onClick={() => setup(gameBoard)}>Start</button>
+      <section>
+        <div>
+          <button onClick={reset} className="toggle">{generation > 1 ? 'Reset' : 'Run'}</button>
+          <button onClick={toggleTicking} className="toggle">{paused ? 'Resume' : 'Pause'}</button>
+        </div>
+        <p>
+          Current generation: {generation}
+        </p>
+      </section>
+      {area
+        ? <table>
+          <tbody>
+            {area.map((tr, trId) => {
+              return (
+                <tr key={trId}>{tr.map((td, tdId) => {
+                  return (
+                    <td key={tdId} className={td ? 'alive' : 'dead'}></td>
+                  );
+                })}</tr>
+              );
+            })}
+          </tbody>
+        </table>
+        : ''}
+
+      <section>
+        <p><small>Have you enjoyed this particular game? <br />Share it with your peers using the link below:</small></p>
+        <div>
+          <input ref={gameUrl} value={window.location.href} readOnly />
+          <button onClick={copyUrl} className="copy">Copy</button>
+        </div>
+      </section>
     </header>
   );
 }
