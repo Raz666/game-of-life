@@ -6,15 +6,15 @@ type Params = {
   startPoint: string,
 };
 
-const startPointSize = 20; //prepare table to overflow instead if squish
+const startPointSize = 20;
 
 const Game: React.FC<RouteComponentProps<Params>> = ({ match }) => {
   let parsedUrl: Matrix | undefined;
-  let parseError: string;
+  let parseError = '';
   try {
     parsedUrl = match.params && match.params.startPoint && JSON.parse(match.params.startPoint)
   } catch {
-    parseError = 'There’s a typo in the starting point. Please make sure it looks like this: [[0,1,0],[0,1,0],[0,1,0]]'; //show it somewhere
+    parseError = 'There’s a typo in the link you’ve used. Please make sure it looks like this (mind all the brackets!): [[0,1,0],[0,1,0],[0,1,0]]';
   }
 
   const startPoint = parsedUrl ? parsedUrl : generateStartPoint(startPointSize, startPointSize);
@@ -56,30 +56,17 @@ const Game: React.FC<RouteComponentProps<Params>> = ({ match }) => {
     if (!paused) setup(newStartPoint ? newStartPoint : currentStartPoint);
   }
 
-  // useEffect(() => {
-  //   // console.log('generation', generation);
-
-  // }, [generation]);
-
-  // useEffect(() => {
-  //   // console.log('area', JSON.stringify(area));
-  //   // [[0,0,0,1,0],[1,0,1,0,1],[0,0,1,1,1],[0,1,0,0,0],[0,0,1,1,0]]
-  // }, [area]);
-
   useEffect(() => {
-    // console.log('newStartPoint', JSON.stringify(currentStartPoint));
-    // console.log('href', window.location.origin);
     setShareUrl(`${window.location.origin}/${JSON.stringify(currentStartPoint)}`);
   }, [currentStartPoint]);
 
   return (
-    <header className="App-header">
+    <div className="game-field">
+      {parseError ? <small><i>{parseError}</i></small> : ''}
       <section>
-        <div>
-          <p>
-            <button onClick={() => reset(generateStartPoint(startPointSize, startPointSize))} className="toggle">New start point</button>
-          </p>
-        </div>
+        <p>
+          <button onClick={() => reset(generateStartPoint(startPointSize, startPointSize))} className="toggle">New start point</button>
+        </p>
         <div>
           <button onClick={() => reset()} className="toggle" disabled={generation <= 1}>Reset</button>
           <button onClick={toggleTicking} className="toggle">{paused ? (generation > 1 ? 'Resume' : 'Run') : 'Pause'}</button>
@@ -102,7 +89,8 @@ const Game: React.FC<RouteComponentProps<Params>> = ({ match }) => {
             })}
           </tbody>
         </table>
-        : ''}
+        : ''
+      }
 
       <section>
         <p><small>Have you enjoyed this particular game? <br />Share it with your peers using the link below:</small></p>
@@ -111,7 +99,7 @@ const Game: React.FC<RouteComponentProps<Params>> = ({ match }) => {
           <button onClick={copyUrl} className="copy">Copy</button>
         </div>
       </section>
-    </header>
+    </div>
   );
 }
 
