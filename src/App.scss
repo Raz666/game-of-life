@@ -22,8 +22,8 @@ $common-border: 2px solid $common-light;
 }
 
 td {
-  width: 20px;
-  height: 20px;
+  width: 6px;
+  height: 6px;
 
   &.alive {
     background-color: $common-light;
@@ -36,11 +36,16 @@ button {
   border: $common-border;
   color: $common-dark;
 
-  &:hover,
+  &:hover:enabled,
   &:focus {
     background: none;
     color: $common-light;
     cursor: pointer;
+  }
+
+  &:disabled{
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 
   &.toggle {
