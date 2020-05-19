@@ -38,10 +38,16 @@ export const calculateNextGeneration = (prevGen: Matrix): Matrix => {
   return nextGen;
 }
 
-export const generateStartPoint = (width: number, height: number): Matrix => {
+export const generateStartPoint = (width: number, height: number, value?: 0 | 1): Matrix => {
   return Array.from({ length: height }, () => (
     Array.from({ length: width }, () => {
-      return (Math.random() * 100 | 0) < 50 ? dead : alive
+      return (
+        value !== undefined
+          ? value
+          : (Math.random() * 100 | 0) < 50
+            ? dead
+            : alive
+      );
     })
   ))
 }

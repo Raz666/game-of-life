@@ -1,10 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { Matrix, calculateNextGeneration, generateStartPoint } from '../services/GameLogic';
+import SizeInput from './SizeInput';
 
 type Params = {
   startPoint: string,
-};
+}
+type CellCoordinate = {
+  rowIndex: number,
+  cellIndex: number,
+}
 
 const startPointSize = 20;
 
@@ -13,15 +18,18 @@ const Game: React.FC<RouteComponentProps<Params>> = ({ match }) => {
   let parseError = '';
   try {
     parsedUrl = match.params && match.params.startPoint && JSON.parse(match.params.startPoint)
-  } catch {
-    parseError = 'There’s a typo in the link you’ve used. Please make sure it looks like this (mind all the brackets!): [[0,1,0],[0,1,0],[0,1,0]]';
+  } catch (err) {
+    parseError = `There’s a typo in the link you’ve used. Please make sure it looks like this (mind all the brackets!): [[0,1,0],[0,1,0],[0,1,0]]. A random starting area has been set up instead.`;
   }
 
-  const startPoint = parsedUrl ? parsedUrl : generateStartPoint(startPointSize, startPointSize);
+  const [startWidth, setStartWidth] = useState(parsedUrl ? parsedUrl[0].length : startPointSize);
+  const [startHeight, setStartHeight] = useState(parsedUrl ? parsedUrl.length : startPointSize);
+  const startPoint = parsedUrl ? parsedUrl : () => generateStartPoint(startWidth, startHeight);
   const gameUrl = useRef<HTMLInputElement>(null);
 
   const [area, setArea] = useState(startPoint);
   const [currentStartPoint, setCurrentStartPoint] = useState(startPoint);
+  const [newStartPointViable, setNewStartPointViable] = useState(true);
   const [shareUrl, setShareUrl] = useState(window.location.href);
   const [generation, setGeneration] = useState(1);
   const [ticker, setTicker] = useState(1);
@@ -56,6 +64,16 @@ const Game: React.FC<RouteComponentProps<Params>> = ({ match }) => {
     if (!paused) setup(newStartPoint ? newStartPoint : currentStartPoint);
   }
 
+  const toggleCell = (cellCoordinate: CellCoordinate, area: Matrix): void => {
+    const newArea = area
+      .map((row, rowIndex) => row
+        .map((cell, cellIndex) => (rowIndex === cellCoordinate.rowIndex && cellIndex === cellCoordinate.cellIndex
+          ? (cell ? 0 : 1)
+          : cell
+        )));
+    reset(newArea);
+  }
+
   useEffect(() => {
     setShareUrl(`${window.location.origin}/${JSON.stringify(currentStartPoint)}`);
   }, [currentStartPoint]);
@@ -64,39 +82,88 @@ const Game: React.FC<RouteComponentProps<Params>> = ({ match }) => {
     <div className="game-field">
       {parseError ? <small><i>{parseError}</i></small> : ''}
       <section>
-        <p>
-          <button onClick={() => reset(generateStartPoint(startPointSize, startPointSize))} className="toggle">New start point</button>
-        </p>
+        <h3 className="heading">
+          Starting area
+        </h3>
+        <div style={{ marginBottom: '1em' }}>
+          <SizeInput value={startWidth} setValue={setStartWidth} label="width" setValidity={setNewStartPointViable} />
+          <SizeInput value={startHeight} setValue={setStartHeight} label="height" setValidity={setNewStartPointViable} />
+        </div>
         <div>
-          <button onClick={() => reset()} className="toggle" disabled={generation <= 1}>Reset</button>
-          <button onClick={toggleTicking} className="toggle">{paused ? (generation > 1 ? 'Resume' : 'Run') : 'Pause'}</button>
+          <button
+            onClick={() => reset(generateStartPoint(startWidth, startHeight))}
+            className="toggle"
+            disabled={!newStartPointViable}
+          >
+            Random
+          </button>
+          <button
+            onClick={() => reset(generateStartPoint(startWidth, startHeight, 1))}
+            disabled={!newStartPointViable}
+            className="toggle"
+          >
+            All alive
+          </button>
+          <button
+            onClick={() => reset(generateStartPoint(startWidth, startHeight, 0))}
+            disabled={!newStartPointViable}
+            className="toggle"
+          >
+            All dead
+          </button>
+        </div>
+        <h3 className="heading">
+          Unleash life
+        </h3>
+        <div>
+          <button
+            onClick={toggleTicking}
+            className="toggle"
+          >
+            {paused ? (generation > 1 ? 'Resume' : 'Run') : 'Pause'}
+          </button>
+          <button
+            onClick={() => reset()}
+            className="toggle"
+            disabled={generation <= 1}
+          >
+            Reset
+          </button>
         </div>
         <p>
           Current generation: {generation}
         </p>
       </section>
       {area
-        ? <table>
-          <tbody>
-            {area.map((tr, trId) => {
-              return (
-                <tr key={trId}>{tr.map((td, tdId) => {
+        ? <div className="area">
+          {area.map((row, rowIndex) => {
+            return (
+              <div key={rowIndex} className="area-row">
+                {row.map((cell, cellIndex) => {
                   return (
-                    <td key={tdId} className={td ? 'alive' : 'dead'}></td>
+                    <div key={cellIndex} className="area-cell">
+                      <button
+                        onClick={() => toggleCell({ cellIndex: cellIndex, rowIndex: rowIndex }, area)}
+                        className={`cell ${cell ? 'alive' : 'dead'}`}
+                      />
+                    </div>
                   );
-                })}</tr>
-              );
-            })}
-          </tbody>
-        </table>
+                })}
+              </div>
+            );
+          })}
+        </div>
         : ''
       }
 
       <section>
-        <p><small>Have you enjoyed this particular game? <br />Share it with your peers using the link below:</small></p>
-        <div>
+        <h3 className="heading">
+          Share your joy
+        </h3>
+        <p><small>You can share the current starting area setup using the link below:</small></p>
+        <div className="group">
           <input ref={gameUrl} value={shareUrl} readOnly />
-          <button onClick={copyUrl} className="copy">Copy</button>
+          <button onClick={copyUrl}>Copy</button>
         </div>
       </section>
     </div>
