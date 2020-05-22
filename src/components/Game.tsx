@@ -17,17 +17,19 @@ const Game: React.FC<RouteComponentProps<Params>> = ({ match }) => {
   let parsedUrl: Matrix | undefined;
   let parseError = '';
   try {
-    let rawParse = JSON.parse(match.params.startPoint);
-    const startPointWidth = parseInt(rawParse.pop());
-    parsedUrl = rawParse.map((row: Array<string>) => row
-      .map((e, index) => parseInt(e, 16)
-        .toString(2)
-        .padStart(index === row.length - 1 ? (startPointWidth % 20 || 20) : 20, '0')
-      )
-      .reduce((a, acc) => a + acc)
-      .split('')
-      .map(e => parseInt(e))
-    );
+    let rawParse = match.params && match.params.startPoint && JSON.parse(match.params.startPoint);
+    if (rawParse) {
+      const startPointWidth = parseInt(rawParse.pop());
+      parsedUrl = rawParse.map((row: Array<string>) => row
+        .map((e, index) => parseInt(e, 16)
+          .toString(2)
+          .padStart(index === row.length - 1 ? (startPointWidth % 20 || 20) : 20, '0')
+        )
+        .reduce((a, acc) => a + acc)
+        .split('')
+        .map(e => parseInt(e))
+      );
+    }
   } catch (err) {
     parseError = `There’s a typo in the link you’ve used. A random starting area has been set up instead.`;
   }
