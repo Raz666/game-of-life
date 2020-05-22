@@ -17,9 +17,19 @@ const Game: React.FC<RouteComponentProps<Params>> = ({ match }) => {
   let parsedUrl: Matrix | undefined;
   let parseError = '';
   try {
-    parsedUrl = match.params && match.params.startPoint && JSON.parse(match.params.startPoint)
+    let rawParse = JSON.parse(match.params.startPoint);
+    const startPointWidth = parseInt(rawParse.pop());
+    parsedUrl = rawParse.map((row: Array<string>) => row
+      .map((e, index) => parseInt(e, 16)
+        .toString(2)
+        .padStart(index === row.length - 1 ? (startPointWidth % 20 || 20) : 20, '0')
+      )
+      .reduce((a, acc) => a + acc)
+      .split('')
+      .map(e => parseInt(e))
+    );
   } catch (err) {
-    parseError = `There’s a typo in the link you’ve used. Please make sure it looks like this (mind all the brackets!): [[0,1,0],[0,1,0],[0,1,0]]. A random starting area has been set up instead.`;
+    parseError = `There’s a typo in the link you’ve used. A random starting area has been set up instead.`;
   }
 
   const [startWidth, setStartWidth] = useState(parsedUrl ? parsedUrl[0].length : startPointSize);
@@ -75,7 +85,25 @@ const Game: React.FC<RouteComponentProps<Params>> = ({ match }) => {
   }
 
   useEffect(() => {
-    setShareUrl(`${window.location.origin}/${JSON.stringify(currentStartPoint)}`);
+    const hexadecimal: Array<Array<string> | string> = currentStartPoint.map((e, index) => {
+      const binary = e.toString().replace(/,/g, '');
+      let binPart: Array<string> = [];
+      let j = 0;
+      let temp = '';
+      for (let i = 0; i < binary.length; i++) {
+        temp = temp + binary[i];
+        j++;
+        if (j === 20 || i === binary.length - 1) {
+          binPart.push(temp);
+          temp = '';
+          j = 0;
+        }
+      }
+      const hexPart = binPart.map(e => parseInt(e, 2).toString(16));
+      return hexPart;
+    });
+    hexadecimal.push(currentStartPoint[0].length.toString());
+    setShareUrl(`${window.location.origin}/${JSON.stringify(hexadecimal)}`);
   }, [currentStartPoint]);
 
   return (
